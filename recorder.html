@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Web Screen and Audio Recorder by Asvad</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #C5C6C7;
+            background-color: #FFFFFF; /* White background */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Top Section with Image and Footer */
+        .top-section {
+            text-align: center;
+            padding: 40px 0 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .top-section img {
+            width: 100px;
+            height: auto;
+            border-radius: 50%;
+            border: 5px solid #66FCF1;
+        }
+
+        /* Main Content */
+        #recordingContainer {
+            background-color: rgb(31, 40, 51);
+            /* Use RGBA to set opacity */
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgb(0, 0, 0);
+            max-width: 800px;
+            width: 90%;
+            margin: 20px auto;
+            animation: fadeInUp 1s ease-in-out;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #66FCF1;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        #startButton,
+        #stopButton,
+        #saveButton {
+            padding: 14px 28px;
+            font-size: 18px;
+            background-color: #66FCF1;
+            color: #0B0C10;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        #stopButton {
+            background-color: #C5C6C7;
+            color: #0B0C10;
+        }
+
+        #saveButton {
+            background-color: #45A29E;
+            color: #0B0C10;
+        }
+
+        #startButton:hover,
+        #stopButton:hover,
+        #saveButton:hover {
+            background-color: #45A29E;
+        }
+
+        #recordedVideo,
+        #playbackVideo {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            display: block;
+            border-radius: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            color: black;
+            flex-wrap: wrap;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        .footer a {
+            color: black;
+            text-decoration: none;
+            margin: 10px;
+            font-size: 24px;
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive styles */
+        @media screen and (min-width: 768px) {
+            .top-section {
+                flex-direction: row;
+            }
+
+            .logo-container {
+                margin-bottom: 0;
+                margin-right: 30px;
+            }
+
+            .top-section img {
+                width: 150px;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-section">
+            <div class="logo-container">
+                <img src="https://media.licdn.com/dms/image/D4D03AQEaqdlHflBcGA/profile-displayphoto-shrink_800_800/0/1691328536517?e=1697068800&v=beta&t=8ZRMDdlc5abP0NMPuTJFcF92sWVTgIzjL1sxwl3gl9U"
+                    alt="Your Logo" class="logo">
+            </div>
+            <div class="footer">
+                <a href="https://www.facebook.com/asvad.sagheer.52?mibextid=ZbWKwL" target="_blank"><i class="fab fa-facebook"></i></a>
+                <a href="https://www.linkedin.com/in/asvadsagheer" target="_blank"><i class="fab fa-linkedin"></i></a>
+                <a href="https://instagram.com/asvadsagheerasad?utm_source=qr&igshid=NGExMmI2YTkyZg%3D%3D" target="_blank"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+
+        <div id="recordingContainer">
+            <h1>FreeToUseRecorder by Asvad - Web Screen and Audio Recorder</h1>
+            <p>Record your screen and audio from system and microphone with FreeToUseRecorder. Share your recordings with ease.</p>
+            <video id="recordedVideo" controls style="display: none;"></video>
+            <button id="startButton">Start Recording</button>
+            <button id="stopButton" disabled>Stop</button>
+            <button id="saveButton" disabled>Save Video</button>
+            <div id="videoContainer" style="display: none;">
+                <h2>Recorded Video</h2>
+                <video id="playbackVideo" controls></video>
+            </div>
+        </div>
+    </div>
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let screenStream;
+
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const saveButton = document.getElementById('saveButton');
+        const recordedVideo = document.getElementById('recordedVideo');
+        const playbackVideo = document.getElementById('playbackVideo');
+        const videoContainer = document.getElementById('videoContainer');
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { mediaSource: 'screen' },
+                    audio: true // Enable audio capture
+                });
+
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                screenStream = stream;
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const videoURL = URL.createObjectURL(blob);
+                    playbackVideo.src = videoURL;
+                    recordedVideo.src = videoURL;
+                };
+
+                mediaRecorder.start();
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                saveButton.disabled = true;
+                videoContainer.style.display = 'none';
+            } catch (error) {
+                console.error('Error accessing screen capture:', error);
+            }
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            screenStream.getTracks().forEach(track => track.stop());
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            saveButton.disabled = false;
+            videoContainer.style.display = 'block';
+        }
+
+        function saveRecording() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'recorded-video.webm';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        startButton.addEventListener('click', startRecording);
+        stopButton.addEventListener('click', stopRecording);
+        saveButton.addEventListener('click', saveRecording);
+    </script>
+</body>
+
+</html>
